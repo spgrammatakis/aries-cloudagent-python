@@ -200,8 +200,8 @@ fi
 
 echo $DOCKERHOST
 
-#LEDGER_URL=http://dev.greenlight.bcovrin.vonx.io
-LEDGER_URL=http://172.26.219.124:9000
+LEDGER_URL=http://dev.greenlight.bcovrin.vonx.io
+#LEDGER_URL=http://172.26.219.124:9000
 
 DOCKER_ENV="-e LOG_LEVEL=${LOG_LEVEL} -e RUNMODE=${RUNMODE} -e DOCKERHOST=${DOCKERHOST}"
 if ! [ -z "$AGENT_PORT" ]; then
