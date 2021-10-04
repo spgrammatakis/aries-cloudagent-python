@@ -170,12 +170,12 @@ async def main(args):
 
         acme_agent.public_did = True
         # TODO: Create schema
-        # acme_schema_name = "employee id schema"
-        # acme_schema_attrs = ["employee_id", "name", "date", "position"]
+        acme_schema_name = "employee id schema"
+        acme_schema_attrs = ["employee_id", "name", "date", "position"]
         await acme_agent.initialize(
             the_agent=agent,
-            # schema_name=acme_schema_name,
-            # schema_attrs=acme_schema_attrs,
+            schema_name=acme_schema_name,
+            schema_attrs=acme_schema_attrs,
         )
 
         # generate an invitation for Alice
