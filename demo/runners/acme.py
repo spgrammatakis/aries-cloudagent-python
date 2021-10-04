@@ -97,7 +97,12 @@ class AcmeAgent(AriesAgent):
 
         if state == "request-received":
             # TODO issue credentials based on offer preview in cred ex record
-            pass
+            # issue credentials based on offer preview in cred ex record
+            if not message.get("auto_issue"):
+                await self.admin_POST(
+                    f"/issue-credential-2.0/records/{cred_ex_id}/issue",
+                    {"comment": f"Issuing credential, exchange {cred_ex_id}"},
+                )
 
     async def handle_issue_credential_v2_0_indy(self, message):
         pass  # employee id schema does not support revocation
@@ -198,6 +203,31 @@ async def main(args):
             elif option == "1":
                 log_status("#13 Issue credential offer to X")
                 # TODO credential offers
+                agent.cred_attrs[cred_def_id] = {
+                    "employee_id": "ACME0009",
+                    "name": "Alice Smith",
+                    "date": date.isoformat(date.today()),
+                    "position": "CEO"
+                }
+                cred_preview = {
+                    "@type": CRED_PREVIEW_TYPE,
+                    "attributes": [
+                        {"name": n, "value": v}
+                        for (n, v) in agent.cred_attrs[cred_def_id].items()
+                    ],
+                }
+                offer_request = {
+                    "connection_id": agent.connection_id,
+                    "comment": f"Offer on cred def id {cred_def_id}",
+                    "credential_preview": cred_preview,
+                    "filter": {"indy": {"cred_def_id": cred_def_id}},
+                }
+                await agent.admin_POST(
+                    "/issue-credential-2.0/send-offer", offer_request
+                )
+            elif option == "2":
+                log_status("#20 Request proof of degree from alice")
+                # TODO presentation requests
                 req_attrs = [
                     {
                         "name": "name",
@@ -233,10 +263,6 @@ async def main(args):
                     "/present-proof-2.0/send-request",
                     proof_request_web_request
                 )
-            elif option == "2":
-                log_status("#20 Request proof of degree from alice")
-                # TODO presentation requests
-
             elif option == "3":
                 msg = await prompt("Enter message: ")
                 await agent.admin_POST(
