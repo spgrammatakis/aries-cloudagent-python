@@ -4,6 +4,9 @@ import logging
 import os
 import sys
 from aiohttp import ClientError
+import random
+from datetime import date
+from uuid import uuid4
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # noqa
 
@@ -25,6 +28,9 @@ from runners.support.utils import (  # noqa:E402
 CRED_PREVIEW_TYPE = "https://didcomm.org/issue-credential/2.0/credential-preview"
 SELF_ATTESTED = os.getenv("SELF_ATTESTED")
 TAILS_FILE_COUNT = int(os.getenv("TAILS_FILE_COUNT", 100))
+CRED_PREVIEW_TYPE = (
+    "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/issue-credential/2.0/credential-preview"
+)
 
 logging.basicConfig(level=logging.WARNING)
 LOGGER = logging.getLogger(__name__)
@@ -102,8 +108,35 @@ class AcmeAgent(AriesAgent):
         self.log(f"Presentation: state = {state}, pres_ex_id = {pres_ex_id}")
 
         if state == "presentation-received":
-            # TODO handle received presentations
-            pass
+            log_status("#27 Process the proof provided by X")
+            log_status("#28 Check if proof is valid")
+            proof = await self.admin_POST(
+                f"/present-proof-2.0/records/{pres_ex_id}/verify-presentation"
+            )
+            self.log("Proof = ", proof["verified"])
+
+            # if presentation is a degree schema (proof of education),
+            # check values received
+            pres_req = message["by_format"]["pres_request"]["indy"]
+            pres = message["by_format"]["pres"]["indy"]
+            is_proof_of_education = (
+                pres_req["name"] == "Proof of Education"
+            )
+            if is_proof_of_education:
+                log_status("#28.1 Received proof of education, check claims")
+                for (referent, attr_spec) in pres_req["requested_attributes"].items():
+                    self.log(
+                        f"{attr_spec['name']}: "
+                        f"{pres['requested_proof']['revealed_attrs'][referent]['raw']}"
+                    )
+                for id_spec in pres["identifiers"]:
+                    # just print out the schema/cred def id's of presented claims
+                    self.log(f"schema_id: {id_spec['schema_id']}")
+                    self.log(f"cred_def_id {id_spec['cred_def_id']}")
+                # TODO placeholder for the next step
+            else:
+                # in case there are any other kinds of proofs received
+                self.log("#28.1 Received ", message["presentation_request"]["name"])
 
     async def handle_basicmessages(self, message):
         self.log("Received message:", message["content"])
@@ -165,7 +198,41 @@ async def main(args):
             elif option == "1":
                 log_status("#13 Issue credential offer to X")
                 # TODO credential offers
-
+                req_attrs = [
+                    {
+                        "name": "name",
+                        "restrictions": [{"schema_name": "degree schema"}]
+                    },
+                    {
+                        "name": "date",
+                        "restrictions": [{"schema_name": "degree schema"}]
+                    },
+                    {
+                        "name": "degree",
+                        "restrictions": [{"schema_name": "degree schema"}]
+                    }
+                ]
+                req_preds = []
+                indy_proof_request = {
+                    "name": "Proof of Education",
+                    "version": "1.0",
+                    "nonce": str(uuid4().int),
+                    "requested_attributes": {
+                        f"0_{req_attr['name']}_uuid": req_attr
+                        for req_attr in req_attrs
+                    },
+                    "requested_predicates": {}
+                }
+                proof_request_web_request = {
+                    "connection_id": agent.connection_id,
+                    "presentation_request": {"indy": indy_proof_request},
+                }
+                # this sends the request to our agent, which forwards it to Alice
+                # (based on the connection_id)
+                await agent.admin_POST(
+                    "/present-proof-2.0/send-request",
+                    proof_request_web_request
+                )
             elif option == "2":
                 log_status("#20 Request proof of degree from alice")
                 # TODO presentation requests
