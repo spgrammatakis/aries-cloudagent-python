@@ -954,6 +954,7 @@ def arg_parser(ident: str = None, port: int = 8020):
         help="Choose the starting port number to listen on",
     )
     if (not ident) or (ident != "alice"):
+    #if (not ident):
         parser.add_argument(
             "--did-exchange",
             action="store_true",

@@ -7,7 +7,7 @@ cd $(dirname $0)
 AGENT="$1"
 shift
 ARGS=""
-LEDGER_URL=http://dev.greenlight.bcovrin.vonx.io
+
 TRACE_ENABLED=""
 TRACE_TAG=acapy.events
 if ! [ -z "$TRACE_TARGET_URL" ]; then
@@ -87,7 +87,7 @@ do
     continue
   ;;
   --bg)
-    if [ "${AGENT}" = "alice" ] || [ "${AGENT}" = "faber" ] || [ "${AGENT}" = "acme" ]; then
+    if [ "${AGENT}" = "alice" ] || [ "${AGENT}" = "controlplatform" ] || [ "${AGENT}" = "faber" ] || [ "${AGENT}" = "device1" ] || [ "${AGENT}" = "device2" ] || [ "${AGENT}" = "acme" ]; then
       DOCKER_OPTS="-d"
       echo -e "\nRunning in ${AGENT} in the background. Note that you cannot use the command line console in this mode."
       echo To see the logs use: \"docker logs ${AGENT}\".
@@ -95,7 +95,7 @@ do
       echo To stop the agent, use: \"docker stop ${AGENT}\". The docker environment will
       echo -e "be removed on stop.\n\n"
     else
-      echo The "bg" option \(for running docker in detached mode\) is only for agents Alice, Faber and Acme.
+      echo The "bg" option \(for running docker in detached mode\) is only for agents Alice, ControlPlatform, Faber, Device1, Device2 and Acme.
       echo Ignoring...
     fi
     continue
@@ -106,7 +106,7 @@ do
 Usage:
    ./demo_run <agent> [OPTIONS]
 
-   - <agent> is one of alice, faber, acme, performance.
+   - <agent> is one of alice, controlplatform faber, acme, device1, device2, performance.
    - Options:
       --events - display on the terminal the webhook events from the ACA-Py agent.
       --timing - at the end of the run, display timing; relevant to the "performance" agent.
@@ -125,24 +125,36 @@ EOF
   ARGS="${ARGS:+$ARGS }$i"
 done
 
-if [ "$AGENT" = "faber" ]; then
-  AGENT_MODULE="faber"
+# if [ "$AGENT" = "faber" ]; then
+#   AGENT_MODULE="faber"
+#   AGENT_PORT=8020
+#   AGENT_PORT_RANGE=8020-8027
+if [ "$AGENT" = "controlplatform" ]; then
+  AGENT_MODULE="controlplatform"
   AGENT_PORT=8020
   AGENT_PORT_RANGE=8020-8027
 elif [ "$AGENT" = "alice" ]; then
   AGENT_MODULE="alice"
   AGENT_PORT=8030
   AGENT_PORT_RANGE=8030-8037
-elif [ "$AGENT" = "acme" ]; then
-  AGENT_MODULE="acme"
+# elif [ "$AGENT" = "acme" ]; then
+#   AGENT_MODULE="acme"
+#   AGENT_PORT=8040
+#   AGENT_PORT_RANGE=8040-8047
+elif [ "$AGENT" = "device1" ]; then
+  AGENT_MODULE="device1"
   AGENT_PORT=8040
   AGENT_PORT_RANGE=8040-8047
+elif [ "$AGENT" = "device2" ]; then
+  AGENT_MODULE="device2"
+  AGENT_PORT=8050
+  AGENT_PORT_RANGE=8050-8057
 elif [ "$AGENT" = "performance" ]; then
   AGENT_MODULE="performance"
-  AGENT_PORT=8050
-  AGENT_PORT_RANGE=8050-8068
+  AGENT_PORT=8060
+  AGENT_PORT_RANGE=8060-8068
 else
-  echo "Please specify which agent you want to run. Choose from 'faber', 'alice', 'acme', or 'performance'."
+  echo "Please specify which agent you want to run. Choose from 'controlplatform', 'faber', 'alice', 'acme', 'device1', 'device2' or 'performance'."
   exit 1
 fi
 
@@ -187,6 +199,9 @@ if [ -z "$AGENT_ENDPOINT" ] && [ "$RUNMODE" == "docker" ]; then
 fi
 
 echo $DOCKERHOST
+
+LEDGER_URL=http://dev.greenlight.bcovrin.vonx.io
+#LEDGER_URL=http://172.26.219.124:9000
 
 DOCKER_ENV="-e LOG_LEVEL=${LOG_LEVEL} -e RUNMODE=${RUNMODE} -e DOCKERHOST=${DOCKERHOST}"
 if ! [ -z "$AGENT_PORT" ]; then
